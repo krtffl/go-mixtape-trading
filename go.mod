@@ -1,4 +1,4 @@
-module github.com/perezdid/golang-mixtape-trading
+module github.com/perezdid/go-mixtape-trading
 
 go 1.19
 

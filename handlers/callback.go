@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/perezdid/golang-mixtape-trading/config"
-	"github.com/perezdid/golang-mixtape-trading/models"
+	"github.com/perezdid/go-mixtape-trading/config"
+	"github.com/perezdid/go-mixtape-trading/models"
 )
 
 func Callback(w http.ResponseWriter, r *http.Request) {
@@ -48,5 +48,5 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		Value: url.QueryEscape(accessToken),
 	})
 
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/me", http.StatusTemporaryRedirect)
 }

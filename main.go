@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/joho/godotenv"
-	"github.com/perezdid/golang-mixtape-trading/handlers"
+	"github.com/perezdid/go-mixtape-trading/handlers"
 )
 
 func main() {
@@ -15,10 +15,11 @@ func main() {
 	}
 
 	http.HandleFunc("/", handlers.Status)
-	http.HandleFunc("/search", handlers.Search)
 	http.HandleFunc("/login", handlers.Login)
 	http.HandleFunc("/callback", handlers.Callback)
-	http.HandleFunc("/playlist", handlers.Playlist)
+	http.HandleFunc("/me", handlers.UserInfo)
+	http.HandleFunc("/search", handlers.Search)
+	http.HandleFunc("/playlist", handlers.CreatePlaylist)
 
 	http.ListenAndServe(":8080", nil)
 }

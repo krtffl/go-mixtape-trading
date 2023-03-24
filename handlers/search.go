@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/perezdid/golang-mixtape-trading/config"
-	"github.com/perezdid/golang-mixtape-trading/models"
+	"github.com/perezdid/go-mixtape-trading/config"
+	"github.com/perezdid/go-mixtape-trading/models"
 )
 
 func Search(w http.ResponseWriter, r *http.Request) {

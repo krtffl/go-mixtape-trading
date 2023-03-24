@@ -1,7 +1,6 @@
 package models
 
-type PlaylistRequest struct {
-	Name        string `json:"name"`
-	Public      bool   `json:"public"`
-	Description string `json:"description"`
+type PlaylistRequestBody struct {
+	PlaylistFor string   `json:"playlistFor"`
+	Tracks      []string `json:"tracks"`
 }

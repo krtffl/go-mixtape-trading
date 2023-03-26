@@ -45,11 +45,5 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 	accessToken := tokenResponse.AccessToken
 
 	utils.SetCookie(w, "access_token", accessToken)
-
-	http.SetCookie(w, &http.Cookie{
-		Name:  "mixtape_trading",
-		Value: url.QueryEscape(accessToken),
-	})
-
 	http.Redirect(w, r, "/me", http.StatusTemporaryRedirect)
 }

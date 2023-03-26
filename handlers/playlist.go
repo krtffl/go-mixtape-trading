@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/perezdid/go-mixtape-trading/config"
 	"github.com/perezdid/go-mixtape-trading/models"
@@ -76,8 +77,14 @@ func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tracks, err := getRecommendations(requestBody.Tracks, accessToken)
+	if err != nil {
+		http.Error(w, "Failed to generate track recommendations", http.StatusInternalServerError)
+		return
+	}
+
 	trackData := map[string][]string{
-		"uris": requestBody.Tracks,
+		"uris": tracks,
 	}
 
 	addTracksBody, _ := json.Marshal(trackData)
@@ -102,4 +109,58 @@ func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func getRecommendations(songURIs []string, accessToken string) ([]string, error) {
+	limit := 50 - len(songURIs)
+
+	songsIDs, err := getTrackIDsFromURIs(songURIs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send HTTP request: %v", err)
+	}
+
+	seedURIs := strings.Join(songsIDs, ",")
+	requestURL := fmt.Sprintf("%s?limit=%d&seed_tracks=%s&min_energy=0.5&min_popularity=40", config.RecommendationsEndpoint, limit, seedURIs)
+
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var recommendationResponse models.RecommendationResponse
+	err = json.Unmarshal(body, &recommendationResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse response JSON: %v", err)
+	}
+
+	for _, track := range recommendationResponse.Tracks {
+		songURIs = append(songURIs, track.URI)
+	}
+
+	return songURIs, nil
+}
+
+func getTrackIDsFromURIs(trackURIs []string) ([]string, error) {
+	const uriPrefix = "spotify:track:"
+	var trackIDs []string
+	for _, trackURI := range trackURIs {
+		if !strings.HasPrefix(trackURI, uriPrefix) {
+			return nil, fmt.Errorf("%s is not a valid track URI", trackURI)
+		}
+		trackIDs = append(trackIDs, strings.TrimPrefix(trackURI, uriPrefix))
+	}
+	return trackIDs, nil
 }

@@ -27,3 +27,9 @@ type UserProfile struct {
 	} `json:"images"`
 	Product string `json:"product"`
 }
+
+type RecommendationResponse struct {
+	Tracks []struct {
+		URI string `json:"uri"`
+	} `json:"tracks"`
+}

@@ -4,20 +4,14 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/perezdid/go-mixtape-trading/config"
 	"github.com/perezdid/go-mixtape-trading/models"
+	"github.com/perezdid/go-mixtape-trading/utils"
 )
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("mixtape_trading")
-	if err != nil {
-		http.Error(w, "Access token not found", http.StatusUnauthorized)
-		return
-	}
-
-	accessToken, err := url.QueryUnescape(cookie.Value)
+	accessToken, err := utils.GetCookie(r, "access_token")
 	if err != nil {
 		http.Error(w, "Invalid access token", http.StatusUnauthorized)
 		return
@@ -56,10 +50,11 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:  "user_id",
-		Value: url.QueryEscape(userProfile.ID),
-	})
+	err = utils.SetCookie(w, "user_id", userProfile.ID)
+	if err != nil {
+		http.Error(w, "Could not set user config", http.StatusUnauthorized)
+		return
+	}
 
 	http.Redirect(w, r, "/", http.StatusFound)
 }

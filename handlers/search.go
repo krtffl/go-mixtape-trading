@@ -4,20 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/perezdid/go-mixtape-trading/config"
 	"github.com/perezdid/go-mixtape-trading/models"
+	"github.com/perezdid/go-mixtape-trading/utils"
 )
 
 func Search(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("mixtape_trading")
-	if err != nil {
-		http.Error(w, "Access token not found", http.StatusUnauthorized)
-		return
-	}
-
-	accessToken, err := url.QueryUnescape(cookie.Value)
+	accessToken, err := utils.GetCookie(r, "access_token")
 	if err != nil {
 		http.Error(w, "Invalid access token", http.StatusUnauthorized)
 		return

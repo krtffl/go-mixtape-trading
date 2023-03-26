@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/perezdid/go-mixtape-trading/handlers"
+	"github.com/perezdid/go-mixtape-trading/utils"
 )
 
 func main() {
@@ -14,6 +15,10 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	err = utils.SetEncryptionKeyEnvVar()
+	if err != nil {
+		log.Fatalf("Error setting encryption key: %v", err)
+	}
 	http.HandleFunc("/", handlers.Status)
 	http.HandleFunc("/login", handlers.Login)
 	http.HandleFunc("/callback", handlers.Callback)

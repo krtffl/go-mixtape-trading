@@ -9,6 +9,7 @@ import (
 
 	"github.com/perezdid/go-mixtape-trading/config"
 	"github.com/perezdid/go-mixtape-trading/models"
+	"github.com/perezdid/go-mixtape-trading/utils"
 )
 
 func Callback(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +43,8 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken := tokenResponse.AccessToken
+
+	utils.SetCookie(w, "access_token", accessToken)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:  "mixtape_trading",

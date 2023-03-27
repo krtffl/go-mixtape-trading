@@ -1,8 +1,17 @@
 package models
 
 type PlaylistResponse struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	ExternalURLs struct {
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+	Public bool `json:"public"`
+}
+
+type PlaylistCreationResponse struct {
 	ID   string `json:"id"`
-	Name string `json:"name"`
+	Link string `json:"link"`
 }
 
 type SearchResponse struct {

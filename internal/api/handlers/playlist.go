@@ -38,42 +38,10 @@ func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &http.Client{}
-	playlistName := fmt.Sprintf("This is %s", requestBody.PlaylistFor)
-	playlistData := map[string]string{
-		"name":        playlistName,
-		"description": "i have used the go mixtape trading application to create this playlist for you",
-	}
-	playlistBody, _ := json.Marshal(playlistData)
-	playlistReq, err := http.NewRequest("POST", fmt.Sprintf(config.CreatePlaylistEndpoint, userID), bytes.NewBuffer(playlistBody))
-	if err != nil {
-		http.Error(w, "Failed to create playlist request", http.StatusInternalServerError)
-		return
-	}
-	playlistReq.Header.Set("Content-Type", "application/json")
-	playlistReq.Header.Set("Authorization", "Bearer "+accessToken)
 
-	playlistResp, err := client.Do(playlistReq)
+	playlist, err := createPlaylist(w, client, requestBody.PlaylistFor, userID, accessToken)
 	if err != nil {
 		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
-		return
-	}
-	defer playlistResp.Body.Close()
-
-	if playlistResp.StatusCode != http.StatusCreated {
-		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
-		return
-	}
-
-	playlistBody, err = io.ReadAll(playlistResp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read playlist response body", http.StatusInternalServerError)
-		return
-	}
-
-	var playlistResponse models.PlaylistResponse
-	err = json.Unmarshal(playlistBody, &playlistResponse)
-	if err != nil {
-		http.Error(w, "Failed to parse playlist response body", http.StatusInternalServerError)
 		return
 	}
 
@@ -83,32 +51,21 @@ func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trackData := map[string][]string{
-		"uris": tracks,
-	}
-
-	addTracksBody, _ := json.Marshal(trackData)
-	addTracksReq, err := http.NewRequest("POST", fmt.Sprintf(config.AddTracksEndpoint, playlistResponse.ID), bytes.NewBuffer(addTracksBody))
+	err = addTracksToPlaylist(w, client, tracks, playlist.ID, accessToken)
 	if err != nil {
-		http.Error(w, "Failed to create add tracks request", http.StatusInternalServerError)
+		http.Error(w, "Failed to add tracks to new playlist", http.StatusInternalServerError)
 		return
 	}
-	addTracksReq.Header.Set("Content-Type", "application/json")
-	addTracksReq.Header.Set("Authorization", "Bearer "+accessToken)
 
-	addTracksResp, err := client.Do(addTracksReq)
+	jsonResponse, err := json.Marshal(playlist)
 	if err != nil {
-		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
-		return
-	}
-	defer addTracksResp.Body.Close()
-
-	if addTracksResp.StatusCode != http.StatusCreated {
-		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
+
 }
 
 func getRecommendations(songURIs []string, accessToken string) ([]string, error) {
@@ -163,4 +120,87 @@ func getTrackIDsFromURIs(trackURIs []string) ([]string, error) {
 		trackIDs = append(trackIDs, strings.TrimPrefix(trackURI, uriPrefix))
 	}
 	return trackIDs, nil
+}
+
+func createPlaylist(w http.ResponseWriter, client *http.Client, name string, userID string, accessToken string) (*models.PlaylistCreationResponse, error) {
+	playlistName := fmt.Sprintf("This is %s", name)
+	playlistData := map[string]string{
+		"name":        playlistName,
+		"description": "i have used the go mixtape trading application to create this playlist for you",
+	}
+
+	playlistBody, _ := json.Marshal(playlistData)
+	playlistReq, err := http.NewRequest("POST", fmt.Sprintf(config.CreatePlaylistEndpoint, userID), bytes.NewBuffer(playlistBody))
+
+	if err != nil {
+		http.Error(w, "Failed to create playlist request", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	playlistReq.Header.Set("Content-Type", "application/json")
+	playlistReq.Header.Set("Authorization", "Bearer "+accessToken)
+
+	playlistResp, err := client.Do(playlistReq)
+	if err != nil {
+		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	defer playlistResp.Body.Close()
+
+	if playlistResp.StatusCode != http.StatusCreated {
+		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	playlistBody, err = io.ReadAll(playlistResp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read playlist response body", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	var playlistResponse models.PlaylistResponse
+	err = json.Unmarshal(playlistBody, &playlistResponse)
+	if err != nil {
+		http.Error(w, "Failed to parse playlist response body", http.StatusInternalServerError)
+		return nil, err
+	}
+
+	response := &models.PlaylistCreationResponse{
+		ID:   playlistResponse.ID,
+		Link: playlistResponse.ExternalURLs.Spotify,
+	}
+
+	return response, nil
+}
+
+func addTracksToPlaylist(w http.ResponseWriter, client *http.Client, tracks []string, playlistID string, accessToken string) error {
+	trackData := map[string][]string{
+		"uris": tracks,
+	}
+
+	addTracksBody, _ := json.Marshal(trackData)
+	addTracksReq, err := http.NewRequest("POST", fmt.Sprintf(config.AddTracksEndpoint, playlistID), bytes.NewBuffer(addTracksBody))
+	if err != nil {
+		http.Error(w, "Failed to create add tracks request", http.StatusInternalServerError)
+		return err
+	}
+
+	addTracksReq.Header.Set("Content-Type", "application/json")
+	addTracksReq.Header.Set("Authorization", "Bearer "+accessToken)
+
+	addTracksResp, err := client.Do(addTracksReq)
+	if err != nil {
+		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
+		return err
+	}
+
+	defer addTracksResp.Body.Close()
+
+	if addTracksResp.StatusCode != http.StatusCreated {
+		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
+		return err
+	}
+
+	return nil
 }

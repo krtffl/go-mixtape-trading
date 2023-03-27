@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,7 +19,7 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
-	data.Set("redirect_uri", config.RedirectURI)
+	data.Set("redirect_uri", fmt.Sprintf(config.RedirectURI, os.Getenv("BASE_URL")))
 
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
 	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")

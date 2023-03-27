@@ -5,11 +5,13 @@ import (
 	"net/http"
 
 	"github.com/joho/godotenv"
-	"github.com/perezdid/go-mixtape-trading/internal/api/handlers"
+	"github.com/perezdid/go-mixtape-trading/internal/api"
 	"github.com/perezdid/go-mixtape-trading/internal/utils"
 )
 
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -19,12 +21,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error setting encryption key: %v", err)
 	}
-	http.HandleFunc("/", handlers.Status)
-	http.HandleFunc("/login", handlers.Login)
-	http.HandleFunc("/callback", handlers.Callback)
-	http.HandleFunc("/me", handlers.UserInfo)
-	http.HandleFunc("/search", handlers.Search)
-	http.HandleFunc("/playlist", handlers.CreatePlaylist)
+
+	api.SetupRoutes()
 
 	http.ListenAndServe(":8080", nil)
 }

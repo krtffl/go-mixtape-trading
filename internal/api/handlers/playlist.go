@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -14,48 +15,72 @@ import (
 )
 
 func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
+	log.Printf("received %s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
+
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	accessToken, err := utils.GetCookie(r, "access_token")
 	if err != nil {
-		http.Error(w, "Invalid access token", http.StatusUnauthorized)
+		log.Printf("retrieving access token from cookie failed: %s", err)
+		http.Error(w, "invalid access token", http.StatusUnauthorized)
 		return
 	}
+
+	log.Printf("parsing create playlist request body")
 
 	var requestBody models.PlaylistRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		log.Printf("parsing create playlist request body failed: %s", err)
+		http.Error(w, "failed to parse request body", http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("request body - PlaylistFor: %s", requestBody.PlaylistFor)
+	log.Printf("request body - Tracks: %s", requestBody.Tracks)
+
+	log.Printf("retrieving user ID from cookie")
+
 	userID, err := utils.GetCookie(r, "user_id")
 	if err != nil {
-		http.Error(w, "Invalid access token", http.StatusUnauthorized)
+		log.Printf("retrieving user ID from cookie failed: %s", err)
+		http.Error(w, "invalid access token", http.StatusUnauthorized)
 		return
 	}
 
 	client := &http.Client{}
 
+	log.Printf("creating playlist for user %s", userID)
+
 	playlist, err := createPlaylist(w, client, requestBody.PlaylistFor, userID, accessToken)
 	if err != nil {
-		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
+		log.Printf("creating playlist failed: %s", err)
+		http.Error(w, "failed to create playlist", http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("generating track recommendations")
 
 	tracks, err := getRecommendations(requestBody.Tracks, accessToken)
 	if err != nil {
-		http.Error(w, "Failed to generate track recommendations", http.StatusInternalServerError)
+		log.Printf("generating track recommendations failed: %s", err)
+		http.Error(w, "failed to generate track recommendations", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("obtained track recommendations: %s", tracks)
+	log.Printf("addings recommended tracks into playlist %s", playlist.ID)
+
 	err = addTracksToPlaylist(w, client, tracks, playlist.ID, accessToken)
 	if err != nil {
-		http.Error(w, "Failed to add tracks to new playlist", http.StatusInternalServerError)
+		log.Printf("addings recommended tracks into playlit failed: %s", err)
+		http.Error(w, "failed to add tracks to new playlist", http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("tracks added to playlist %s for user %s", playlist.ID, userID)
 
 	jsonResponse, err := json.Marshal(playlist)
 	if err != nil {
@@ -182,7 +207,7 @@ func addTracksToPlaylist(w http.ResponseWriter, client *http.Client, tracks []st
 	addTracksBody, _ := json.Marshal(trackData)
 	addTracksReq, err := http.NewRequest("POST", fmt.Sprintf(config.AddTracksEndpoint, playlistID), bytes.NewBuffer(addTracksBody))
 	if err != nil {
-		http.Error(w, "Failed to create add tracks request", http.StatusInternalServerError)
+		http.Error(w, "failed to create add tracks request", http.StatusInternalServerError)
 		return err
 	}
 
@@ -191,14 +216,14 @@ func addTracksToPlaylist(w http.ResponseWriter, client *http.Client, tracks []st
 
 	addTracksResp, err := client.Do(addTracksReq)
 	if err != nil {
-		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
+		http.Error(w, "failed to add tracks to playlist", http.StatusInternalServerError)
 		return err
 	}
 
 	defer addTracksResp.Body.Close()
 
 	if addTracksResp.StatusCode != http.StatusCreated {
-		http.Error(w, "Failed to add tracks to playlist", http.StatusInternalServerError)
+		http.Error(w, "failed to add tracks to playlist", http.StatusInternalServerError)
 		return err
 	}
 

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -27,6 +28,8 @@ func GetEncryptionKey() ([]byte, error) {
 }
 
 func SetEncryptionKeyEnvVar() error {
+	log.Print("generating cookie encryption key")
+
 	key, err := generateEncryptionKey()
 	if err != nil {
 		return fmt.Errorf("failed to generate encryption key: %v", err)
@@ -37,10 +40,14 @@ func SetEncryptionKeyEnvVar() error {
 		return fmt.Errorf("failed to set encryption key as environment variable: %v", err)
 	}
 
+	log.Print("encryption key stored as environment variable")
+
 	return nil
 }
 
 func SetCookie(w http.ResponseWriter, name string, value string) error {
+	log.Printf("setting cookie %s", name)
+
 	key, err := GetEncryptionKey()
 	if err != nil {
 		return err
@@ -69,10 +76,14 @@ func SetCookie(w http.ResponseWriter, name string, value string) error {
 	}
 	http.SetCookie(w, cookie)
 
+	log.Printf("cookie %s set", name)
+
 	return nil
 }
 
 func GetCookie(r *http.Request, name string) (string, error) {
+	log.Printf("retrieving cookie %s", name)
+
 	key, err := GetEncryptionKey()
 	if err != nil {
 		return "", err
@@ -108,16 +119,22 @@ func GetCookie(r *http.Request, name string) (string, error) {
 	plaintext := make([]byte, len(ciphertext))
 	stream.XORKeyStream(plaintext, ciphertext)
 
+	log.Printf("cookie %s successfully retrieved", name)
+
 	return string(plaintext), nil
 }
 
 func generateEncryptionKey() ([]byte, error) {
+	log.Print("generating encryption key...")
+
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("encryption key successfully generated")
 
 	return key, nil
 }

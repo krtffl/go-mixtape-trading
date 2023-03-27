@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/perezdid/go-mixtape-trading/internal/api/models"
@@ -11,15 +12,21 @@ import (
 )
 
 func Search(w http.ResponseWriter, r *http.Request) {
+	log.Printf("received %s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
+
 	accessToken, err := utils.GetCookie(r, "access_token")
 	if err != nil {
-		http.Error(w, "Invalid access token", http.StatusUnauthorized)
+		log.Printf("retrieving access token from cookie failed: %s", err)
+		http.Error(w, "invalid access token", http.StatusUnauthorized)
 		return
 	}
 
+	log.Printf("retrieving track name from query: %s", r.URL.Query())
+
 	query := r.URL.Query().Get("track")
 	if query == "" {
-		http.Error(w, "Track name not found", http.StatusBadRequest)
+		log.Printf("retrieving track name from query failed: %s", err)
+		http.Error(w, "missing track name", http.StatusBadRequest)
 		return
 	}
 
@@ -27,17 +34,23 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s?q=%s&type=track&limit=%s", config.SearchEndpoint, query, "5"), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
+	log.Printf("request to spotify search api: %s", req.URL)
+
 	resp, err := client.Do(req)
 	if err != nil {
-		http.Error(w, "Failed to search tracks", http.StatusInternalServerError)
+		log.Printf("request to spotify search api failed: %s", err)
+		http.Error(w, "could not find spotify tracks", http.StatusInternalServerError)
 		return
 	}
+
 	defer resp.Body.Close()
 
 	var searchResponse models.SearchResponse
 	err = json.NewDecoder(resp.Body).Decode(&searchResponse)
+
 	if err != nil {
-		http.Error(w, "Failed to parse track search response", http.StatusInternalServerError)
+		log.Printf("parsing track search response failed: %s", err)
+		http.Error(w, "failed to parse track search response", http.StatusInternalServerError)
 		return
 	}
 
@@ -53,6 +66,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}
 		tracks = append(tracks, track)
 	}
+
+	log.Printf("response: %s", tracks)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tracks)

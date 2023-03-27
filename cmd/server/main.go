@@ -14,15 +14,17 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("error loading environment variables")
 	}
 
 	err = utils.SetEncryptionKeyEnvVar()
 	if err != nil {
-		log.Fatalf("Error setting encryption key: %v", err)
+		log.Fatalf("%v", err)
 	}
 
 	api.SetupRoutes()
 
 	http.ListenAndServe(":8080", nil)
+	log.Printf("listening on port 8080!")
+
 }

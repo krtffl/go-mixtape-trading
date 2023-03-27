@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/joho/godotenv"
-	"github.com/perezdid/go-mixtape-trading/handlers"
-	"github.com/perezdid/go-mixtape-trading/utils"
+	"github.com/perezdid/go-mixtape-trading/internal/api/handlers"
+	"github.com/perezdid/go-mixtape-trading/internal/utils"
 )
 
 func main() {

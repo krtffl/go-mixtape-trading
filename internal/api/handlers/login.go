@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/perezdid/go-mixtape-trading/config"
+	"github.com/perezdid/go-mixtape-trading/internal/config"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {

@@ -6,10 +6,39 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
+
+func GetEncryptionKey() ([]byte, error) {
+	encodedKey := os.Getenv("ENCRYPTION_KEY")
+	if encodedKey == "" {
+		return nil, fmt.Errorf("ENCRYPTION_KEY does not exist on env variables")
+	}
+
+	key, err := base64.StdEncoding.DecodeString(encodedKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode encryption key: %v", err)
+	}
+	return key, nil
+}
+
+func SetEncryptionKeyEnvVar() error {
+	key, err := generateEncryptionKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate encryption key: %v", err)
+	}
+
+	encodedKey := base64.StdEncoding.EncodeToString(key)
+	if err := os.Setenv("ENCRYPTION_KEY", encodedKey); err != nil {
+		return fmt.Errorf("failed to set encryption key as environment variable: %v", err)
+	}
+
+	return nil
+}
 
 func SetCookie(w http.ResponseWriter, name string, value string) error {
 	key, err := GetEncryptionKey()
@@ -80,4 +109,15 @@ func GetCookie(r *http.Request, name string) (string, error) {
 	stream.XORKeyStream(plaintext, ciphertext)
 
 	return string(plaintext), nil
+}
+
+func generateEncryptionKey() ([]byte, error) {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
 }

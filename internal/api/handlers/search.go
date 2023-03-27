@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/perezdid/go-mixtape-trading/config"
-	"github.com/perezdid/go-mixtape-trading/models"
-	"github.com/perezdid/go-mixtape-trading/utils"
+	"github.com/perezdid/go-mixtape-trading/internal/api/models"
+	"github.com/perezdid/go-mixtape-trading/internal/config"
+	"github.com/perezdid/go-mixtape-trading/internal/utils"
 )
 
 func Search(w http.ResponseWriter, r *http.Request) {

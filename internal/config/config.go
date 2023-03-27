@@ -3,7 +3,6 @@ package config
 const (
 	RedirectURI             = "http://localhost:8080/callback"
 	Scope                   = "playlist-modify-public"
-	Cookie                  = "access_token"
 	CreatePlaylistEndpoint  = "https://api.spotify.com/v1/users/%s/playlists"
 	AddTracksEndpoint       = "https://api.spotify.com/v1/playlists/%s/tracks"
 	SearchEndpoint          = "https://api.spotify.com/v1/search"

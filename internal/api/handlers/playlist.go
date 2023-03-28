@@ -38,6 +38,16 @@ func CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if requestBody.PlaylistFor == "" {
+		http.Error(w, "missing required field: playlistFor", http.StatusBadRequest)
+		return
+	}
+
+	if len(requestBody.Tracks) == 0 {
+		http.Error(w, "missing required field: tracks", http.StatusBadRequest)
+		return
+	}
+
 	log.Printf("request body - PlaylistFor: %s", requestBody.PlaylistFor)
 	log.Printf("request body - Tracks: %s", requestBody.Tracks)
 
@@ -158,8 +168,7 @@ func createPlaylist(w http.ResponseWriter, client *http.Client, name string, use
 	playlistReq, err := http.NewRequest("POST", fmt.Sprintf(config.CreatePlaylistEndpoint, userID), bytes.NewBuffer(playlistBody))
 
 	if err != nil {
-		http.Error(w, "Failed to create playlist request", http.StatusInternalServerError)
-		return nil, err
+		return nil, fmt.Errorf("failed to create playlist request: %v", err)
 	}
 
 	playlistReq.Header.Set("Content-Type", "application/json")
@@ -167,28 +176,24 @@ func createPlaylist(w http.ResponseWriter, client *http.Client, name string, use
 
 	playlistResp, err := client.Do(playlistReq)
 	if err != nil {
-		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
-		return nil, err
+		return nil, fmt.Errorf("failed to create playlist: %v", err)
 	}
 
 	defer playlistResp.Body.Close()
 
 	if playlistResp.StatusCode != http.StatusCreated {
-		http.Error(w, "Failed to create playlist", http.StatusInternalServerError)
-		return nil, err
+		return nil, fmt.Errorf("failed to create playlist: %v", err)
 	}
 
 	playlistBody, err = io.ReadAll(playlistResp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read playlist response body", http.StatusInternalServerError)
-		return nil, err
+		return nil, fmt.Errorf("failed to read playlist response: %v", err)
 	}
 
 	var playlistResponse models.PlaylistResponse
 	err = json.Unmarshal(playlistBody, &playlistResponse)
 	if err != nil {
-		http.Error(w, "Failed to parse playlist response body", http.StatusInternalServerError)
-		return nil, err
+		return nil, fmt.Errorf("failed to parse playlist response: %v", err)
 	}
 
 	response := &models.PlaylistCreationResponse{
@@ -207,8 +212,7 @@ func addTracksToPlaylist(w http.ResponseWriter, client *http.Client, tracks []st
 	addTracksBody, _ := json.Marshal(trackData)
 	addTracksReq, err := http.NewRequest("POST", fmt.Sprintf(config.AddTracksEndpoint, playlistID), bytes.NewBuffer(addTracksBody))
 	if err != nil {
-		http.Error(w, "failed to create add tracks request", http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("failed to create add tracks request: %v", err)
 	}
 
 	addTracksReq.Header.Set("Content-Type", "application/json")
@@ -216,15 +220,13 @@ func addTracksToPlaylist(w http.ResponseWriter, client *http.Client, tracks []st
 
 	addTracksResp, err := client.Do(addTracksReq)
 	if err != nil {
-		http.Error(w, "failed to add tracks to playlist", http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("failed to add tracks to playlist: %v", err)
 	}
 
 	defer addTracksResp.Body.Close()
 
 	if addTracksResp.StatusCode != http.StatusCreated {
-		http.Error(w, "failed to add tracks to playlist", http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("failed to add tracks to playlist: %v", err)
 	}
 
 	return nil

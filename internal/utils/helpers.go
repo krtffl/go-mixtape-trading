@@ -125,7 +125,7 @@ func GetCookie(r *http.Request, name string) (string, error) {
 }
 
 func generateEncryptionKey() ([]byte, error) {
-	log.Print("generating encryption key...")
+	log.Print("generating encryption key")
 
 	key := make([]byte, 32)
 	_, err := rand.Read(key)

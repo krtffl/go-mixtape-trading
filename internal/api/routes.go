@@ -8,10 +8,12 @@ import (
 )
 
 func SetupRoutes() {
-	http.Handle("/", http.HandlerFunc(handlers.Status))
+	http.HandleFunc("/", handlers.Status)
 	http.Handle("/login", middleware.GuardRoute(http.HandlerFunc(handlers.Login)))
 	http.Handle("/callback", middleware.GuardRoute(http.HandlerFunc(handlers.Callback)))
 	http.Handle("/me", middleware.GuardRoute(http.HandlerFunc(handlers.UserInfo)))
 	http.Handle("/search", middleware.GuardRoute(http.HandlerFunc(handlers.Search)))
 	http.Handle("/playlist", middleware.GuardRoute(http.HandlerFunc(handlers.CreatePlaylist)))
+	http.HandleFunc("/", handlers.NotFound)
+
 }

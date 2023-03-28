@@ -12,7 +12,7 @@ func GuardRoute(next http.Handler) http.Handler {
 		apiKey := r.Header.Get("X-API-KEY")
 
 		if apiKey == "" || apiKey != os.Getenv("API_KEY") {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			http.Error(w, "you're not authorized to perform this action", http.StatusUnauthorized)
 			return
 		}
 

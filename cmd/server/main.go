@@ -24,7 +24,7 @@ func main() {
 
 	api.SetupRoutes()
 
-	http.ListenAndServe(":8080", nil)
 	log.Printf("listening on port 8080!")
+	http.ListenAndServe(":8080", nil)
 
 }

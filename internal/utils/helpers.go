@@ -8,22 +8,43 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
+func getEncryptionKeyFilePath() (string, error) {
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, ".encryption-key"), nil
+}
+
 func GetEncryptionKey() ([]byte, error) {
-	encodedKey := os.Getenv("ENCRYPTION_KEY")
-	if encodedKey == "" {
-		return nil, fmt.Errorf("ENCRYPTION_KEY does not exist on env variables")
+	keyFilePath, err := getEncryptionKeyFilePath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get encryption key file path: %v", err)
 	}
 
-	key, err := base64.StdEncoding.DecodeString(encodedKey)
+	key, err := ioutil.ReadFile(keyFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode encryption key: %v", err)
+		log.Print("generating cookie encryption key")
+		key, err = generateEncryptionKey()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate encryption key: %v", err)
+		}
+		if err := ioutil.WriteFile(keyFilePath, key, 0600); err != nil {
+			return nil, fmt.Errorf("failed to write encryption key to file: %v", err)
+		}
+		log.Print("encryption key stored in file")
+	} else {
+		log.Print("encryption key read from file")
 	}
+
 	return key, nil
 }
 
